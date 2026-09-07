@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Agent — Day 1: PDF Upload</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+            color: #222;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        p.subtitle {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 12px 0 16px 0;
+        }
+        button {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .messages li {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .messages .success { background: #dcfce7; color: #166534; }
+        .messages .error   { background: #fee2e2; color: #991b1b; }
+        .messages .warning { background: #fef9c3; color: #854d0e; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            vertical-align: top;
+        }
+        th { color: #666; font-weight: 600; }
+        .empty {
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Agent</h1>
+        <p class="subtitle">Day 1 — Upload a PDF, AI extracts Q&amp;A, saves to database</p>
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="card">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.pdf_file }}
+                <button type="submit">Upload &amp; Extract</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Recently saved questions</h3>
+            {% if questions %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Answer</th>
+                        <th>Source PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for q in questions %}
+                    <tr>
+                        <td>{{ q.question_text }}</td>
+                        <td>{{ q.answer_text }}</td>
+                        <td>{{ q.source.pdf_name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">No questions saved yet. Upload a PDF above to get started.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
