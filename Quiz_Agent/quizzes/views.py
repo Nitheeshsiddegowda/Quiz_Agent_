@@ -41,7 +41,10 @@ def upload_pdf(request):
                     )
                     return redirect("upload_pdf")
 
-                source = QuizSource.objects.create(`r`n                    pdf_name=pdf_file.name,`r`n                    pdf_file=pdf_file,`r`n                )
+                source = QuizSource.objects.create(
+                    pdf_name=pdf_file.name,
+                    pdf_file=pdf_file,
+                )
 
                 created_count = 0
                 for item in qa_list:
@@ -78,4 +81,5 @@ def upload_pdf(request):
         "quizzes/upload.html",
         {"form": form, "questions": recent_questions},
     )
+
 
