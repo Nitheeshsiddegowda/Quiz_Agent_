@@ -1,6 +1,6 @@
 """
 Django settings for quiz_project.
-Day 1: PDF Upload + AI (Gemini) Parsing Agent
+Day 1: PDF upload and local-first extraction foundation.
 """
 
 import os
@@ -106,8 +106,3 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# ------------------------------------------------------------------
-# GEMINI API KEY (used in quizzes/utils.py)
-# ------------------------------------------------------------------
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")

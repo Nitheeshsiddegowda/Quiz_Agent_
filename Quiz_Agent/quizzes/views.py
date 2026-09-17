@@ -6,7 +6,7 @@ from django.contrib import messages
 
 from .models import QuizSource, Question
 from .forms import PDFUploadForm
-from .utils import extract_text_from_pdf, parse_questions_with_gemini
+from .utils import extract_text_from_pdf, parse_questions
 
 
 def upload_pdf(request):
@@ -32,16 +32,19 @@ def upload_pdf(request):
                     )
                     return redirect("upload_pdf")
 
-                qa_list = parse_questions_with_gemini(pdf_text)
+                qa_list = parse_questions(pdf_text)
 
                 if not qa_list:
                     messages.warning(
                         request,
-                        "The AI couldn't find any question/answer pairs in this PDF."
+                        "No question/answer pairs were found in this PDF."
                     )
                     return redirect("upload_pdf")
 
-                source = QuizSource.objects.create(pdf_name=pdf_file.name)
+                source = QuizSource.objects.create(
+                    pdf_name=pdf_file.name,
+                    pdf_file=pdf_file,
+                )
 
                 created_count = 0
                 for item in qa_list:
@@ -78,3 +81,5 @@ def upload_pdf(request):
         "quizzes/upload.html",
         {"form": form, "questions": recent_questions},
     )
+
+
