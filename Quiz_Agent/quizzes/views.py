@@ -7,6 +7,7 @@ from django.contrib import messages
 from .models import QuizSource, Question
 from .forms import PDFUploadForm
 from .utils import extract_text_from_pdf, parse_questions
+from .models import QuizSource, Question, QuestionOption
 
 
 def upload_pdf(request):
@@ -47,16 +48,32 @@ def upload_pdf(request):
                 )
 
                 created_count = 0
+
                 for item in qa_list:
                     q = (item.get("question") or "").strip()
-                    a = (item.get("answer") or "").strip()
-                    if q and a:
-                        Question.objects.create(
-                            source=source,
-                            question_text=q,
-                            answer_text=a,
+                    answer = (item.get("answer") or "").strip().upper()
+                    options = item.get("options") or {}
+
+                    if not q or answer not in options:
+                        continue
+
+                    question = Question.objects.create(
+                        source=source,
+                        question_text=q,
+                        answer_text=answer,
+                    )
+
+                    for option_key in ("A", "B", "C", "D"):
+                        option_text = (options.get(option_key) or "").strip()
+
+                        QuestionOption.objects.create(
+                            question=question,
+                            option_key=option_key,
+                            option_text=option_text,
+                            is_correct=(option_key == answer),
                         )
-                        created_count += 1
+
+                    created_count += 1
 
                 messages.success(
                     request,
