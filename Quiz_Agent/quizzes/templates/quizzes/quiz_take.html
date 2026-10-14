@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Agent — Exam in Progress</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #222;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+        .header-bar {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .header-title h2 {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+        }
+        .header-title p {
+            margin: 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .timer-box {
+            font-size: 16px;
+            font-weight: 600;
+            background: #eef2ff;
+            color: #4338ca;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #c7d2fe;
+        }
+        .timer-box.warning {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .question-number {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .question-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            line-height: 1.5;
+            color: #111827;
+        }
+        .option-item {
+            margin-bottom: 10px;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 14px;
+        }
+        .option-label:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+        .option-label input[type="radio"] {
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        .option-key {
+            display: inline-block;
+            font-weight: 600;
+            width: 22px;
+            color: #4b5563;
+        }
+        .submit-bar {
+            text-align: right;
+            margin-top: 24px;
+        }
+        button.submit-btn {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button.submit-btn:hover {
+            background: #4338ca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-bar">
+            <div class="header-title">
+                <h2>{{ source_name }}</h2>
+                <p>{{ questions|length }} Question{{ questions|length|pluralize }}</p>
+            </div>
+            <div class="timer-box" id="timer-box">
+                {% if is_timed %}
+                Time Remaining: <span id="timer-display">Loading...</span>
+                {% else %}
+                Untimed Exam
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'quiz_submit' %}" id="quiz-form">
+            {% csrf_token %}
+
+            {% for q in questions %}
+            <div class="card">
+                <div class="question-number">Question {{ forloop.counter }} of {{ questions|length }}</div>
+                <div class="question-text">{{ q.question_text }}</div>
+
+                <div class="options-group">
+                    {% for opt in q.options.all %}
+                    <div class="option-item">
+                        <label class="option-label" for="opt_{{ q.id }}_{{ opt.option_key }}">
+                            <input type="radio" name="question_{{ q.id }}" id="opt_{{ q.id }}_{{ opt.option_key }}" value="{{ opt.option_key }}">
+                            <span class="option-key">{{ opt.option_key }}.</span>
+                            <span>{{ opt.option_text }}</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="submit-bar">
+                <button type="submit" class="submit-btn" id="submit-btn">Submit Exam</button>
+            </div>
+        </form>
+    </div>
+
+    {% if is_timed %}
+    <script>
+        (function() {
+            let remaining = {{ remaining_seconds|default:0 }};
+            const timerElem = document.getElementById("timer-display");
+            const timerBox = document.getElementById("timer-box");
+            const form = document.getElementById("quiz-form");
+            const submitBtn = document.getElementById("submit-btn");
+
+            function updateDisplay() {
+                if (remaining <= 0) {
+                    timerElem.textContent = "00:00 (Time's up!)";
+                    timerBox.classList.add("warning");
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Submitting...";
+                    form.submit();
+                    return;
+                }
+
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                timerElem.textContent = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
+
+                if (remaining <= 60) {
+                    timerBox.classList.add("warning");
+                }
+            }
+
+            updateDisplay();
+            const interval = setInterval(function() {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                }
+                updateDisplay();
+            }, 1000);
+        })();
+    </script>
+    {% endif %}
+</body>
+</html>

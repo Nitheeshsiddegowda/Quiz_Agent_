@@ -83,6 +83,10 @@
 </head>
 <body>
     <div class="container">
+        <nav style="margin-bottom: 20px;">
+            <a href="{% url 'upload_pdf' %}" style="font-weight: 600; color: #4f46e5; text-decoration: none; margin-right: 16px;">📁 Upload PDF</a>
+            <a href="{% url 'quiz_setup' %}" style="font-weight: 500; color: #4b5563; text-decoration: none;">📝 Take Quiz</a>
+        </nav>
         <h1>Quiz Agent</h1>
         <p class="subtitle">Upload a PDF to locally extract questions and save to database</p>
 
