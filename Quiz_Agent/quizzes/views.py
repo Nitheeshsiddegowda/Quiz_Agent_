@@ -1,13 +1,13 @@
 import os
 import tempfile
 
-from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import transaction
+from django.shortcuts import redirect, render
 
-from .models import QuizSource, Question
 from .forms import PDFUploadForm
+from .models import Question, QuestionOption, QuizSource
 from .utils import extract_text_from_pdf, parse_questions
-from .models import QuizSource, Question, QuestionOption
 
 
 def upload_pdf(request):
@@ -42,38 +42,49 @@ def upload_pdf(request):
                     )
                     return redirect("upload_pdf")
 
-                source = QuizSource.objects.create(
-                    pdf_name=pdf_file.name,
-                    pdf_file=pdf_file,
-                )
-
-                created_count = 0
-
-                for item in qa_list:
-                    q = (item.get("question") or "").strip()
-                    answer = (item.get("answer") or "").strip().upper()
-                    options = item.get("options") or {}
-
-                    if not q or answer not in options:
-                        continue
-
-                    question = Question.objects.create(
-                        source=source,
-                        question_text=q,
-                        answer_text=answer,
+                with transaction.atomic():
+                    source = QuizSource.objects.create(
+                        pdf_name=pdf_file.name,
+                        pdf_file=pdf_file,
                     )
 
-                    for option_key in ("A", "B", "C", "D"):
-                        option_text = (options.get(option_key) or "").strip()
+                    created_count = 0
 
-                        QuestionOption.objects.create(
-                            question=question,
-                            option_key=option_key,
-                            option_text=option_text,
-                            is_correct=(option_key == answer),
+                    for item in qa_list:
+                        q = (item.get("question") or "").strip()
+                        raw_answer = item.get("answer")
+                        answer = raw_answer.strip().upper() if raw_answer else None
+                        options = item.get("options") or {}
+
+                        # Validate that question text and all four options are present
+                        if (
+                            not q
+                            or len(options) != 4
+                            or not all(options.get(k) for k in ("A", "B", "C", "D"))
+                        ):
+                            continue
+
+                        # If an answer was parsed but does not match any option, treat as missing
+                        if answer and answer not in options:
+                            answer = None
+
+                        question = Question.objects.create(
+                            source=source,
+                            question_text=q,
+                            answer_text=answer or "",
                         )
 
-                    created_count += 1
+                        for option_key in ("A", "B", "C", "D"):
+                            option_text = (options.get(option_key) or "").strip()
+
+                            QuestionOption.objects.create(
+                                question=question,
+                                option_key=option_key,
+                                option_text=option_text,
+                                is_correct=(option_key == answer) if answer else False,
+                            )
+
+                        created_count += 1
 
                 messages.success(
                     request,
@@ -98,5 +109,3 @@ def upload_pdf(request):
         "quizzes/upload.html",
         {"form": form, "questions": recent_questions},
     )
-
-
