@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Agent — Start Quiz</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+            color: #222;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        nav a {
+            margin-right: 16px;
+            text-decoration: none;
+            font-size: 15px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        p.subtitle {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #374151;
+        }
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+        }
+        button {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .messages li {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .messages .success { background: #dcfce7; color: #166534; }
+        .messages .error   { background: #fee2e2; color: #991b1b; }
+        .messages .warning { background: #fef9c3; color: #854d0e; }
+        .messages .info    { background: #e0f2fe; color: #0369a1; }
+        .empty-state {
+            padding: 30px;
+            text-align: center;
+            color: #6b7280;
+        }
+        .hint {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav style="margin-bottom: 20px;">
+            <a href="{% url 'upload_pdf' %}" style="font-weight: 500; color: #4b5563;">📁 Upload PDF</a>
+            <a href="{% url 'quiz_setup' %}" style="font-weight: 600; color: #4f46e5;">📝 Take Quiz</a>
+        </nav>
+
+        <h1>Start a Quiz / Exam</h1>
+        <p class="subtitle">Select your question source and timer preferences to begin</p>
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="card">
+            {% if total_questions > 0 %}
+            <form method="post" action="{% url 'quiz_take' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="source_id">Select Quiz Source</label>
+                    <select name="source_id" id="source_id">
+                        <option value="all">All Available Sources ({{ total_questions }} question{{ total_questions|pluralize }})</option>
+                        {% for s in sources %}
+                        <option value="{{ s.id }}">{{ s.pdf_name }} ({{ s.question_count }} question{{ s.question_count|pluralize }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="hint">Questions will be presented in database order.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="time_limit">Time Limit</label>
+                    <select name="time_limit" id="time_limit">
+                        <option value="300">5 Minutes</option>
+                        <option value="600" selected>10 Minutes (Default)</option>
+                        <option value="900">15 Minutes</option>
+                        <option value="0">Untimed (No time limit)</option>
+                    </select>
+                    <p class="hint">When timed, your exam will automatically submit when time expires.</p>
+                </div>
+
+                <button type="submit">Start Exam →</button>
+            </form>
+            {% else %}
+            <div class="empty-state">
+                <p><strong>No questions found in the database.</strong></p>
+                <p>Please upload a PDF containing multiple-choice questions to populate the quiz database.</p>
+                <a href="{% url 'upload_pdf' %}"><button type="button">Go to PDF Upload</button></a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

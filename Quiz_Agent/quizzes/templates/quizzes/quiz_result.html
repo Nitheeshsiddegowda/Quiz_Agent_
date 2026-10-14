@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Agent — Exam Results</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+            color: #222;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        nav a {
+            margin-right: 16px;
+            text-decoration: none;
+            font-size: 15px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        p.subtitle {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .scorecard {
+            background: #ffffff;
+            border-left: 6px solid #4f46e5;
+        }
+        .timeout-banner {
+            background: #fee2e2;
+            border: 1px solid #f87171;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .metric-item {
+            background: #f9fafb;
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        .metric-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge.correct     { background: #dcfce7; color: #166534; }
+        .badge.incorrect   { background: #fee2e2; color: #991b1b; }
+        .badge.unattempted { background: #fef9c3; color: #854d0e; }
+        .badge.ungraded    { background: #f3f4f6; color: #4b5563; }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .question-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+        .option-review {
+            margin: 6px 0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #f9fafb;
+            border: 1px solid #eee;
+        }
+        .option-review.is-correct {
+            background: #f0fdf4;
+            border-color: #86efac;
+            font-weight: 500;
+        }
+        .option-review.user-selected-wrong {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+        .explanation-box {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn-primary {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav style="margin-bottom: 20px;">
+            <a href="{% url 'upload_pdf' %}" style="font-weight: 500; color: #4b5563;">📁 Upload PDF</a>
+            <a href="{% url 'quiz_setup' %}" style="font-weight: 600; color: #4f46e5;">📝 Take Quiz</a>
+        </nav>
+
+        <h1>Exam Results</h1>
+        <p class="subtitle">{{ result.source_name }}</p>
+
+        {% if result.is_timed_out %}
+        <div class="timeout-banner">
+            ⚠️ <strong>Time Expired:</strong> This exam was submitted after the allowed deadline plus the 10-second grace period.
+        </div>
+        {% endif %}
+
+        <div class="card scorecard">
+            <h2>
+                {% if result.score_percentage is not None %}
+                {{ result.score_percentage }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </h2>
+            <p style="color: #6b7280; margin: 4px 0 0 0;">
+                {% if result.graded_questions > 0 %}
+                You scored {{ result.correct_count }} out of {{ result.graded_questions }} graded question{{ result.graded_questions|pluralize }}.
+                {% else %}
+                No gradable questions (no answer keys were designated for this selection).
+                {% endif %}
+            </p>
+
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ result.correct_count }}</div>
+                    <div class="metric-label">Correct</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ result.incorrect_count }}</div>
+                    <div class="metric-label">Incorrect</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ result.unattempted_count }}</div>
+                    <div class="metric-label">Unattempted</div>
+                </div>
+                {% if result.ungraded_questions > 0 %}
+                <div class="metric-item">
+                    <div class="metric-value">{{ result.ungraded_questions }}</div>
+                    <div class="metric-label">Ungraded</div>
+                </div>
+                {% endif %}
+                <div class="metric-item">
+                    <div class="metric-value">{{ formatted_time }}</div>
+                    <div class="metric-label">Time Taken</div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 32px; margin-bottom: 16px;">Question Review</h3>
+
+        {% for q in result.questions %}
+        <div class="card">
+            <div class="question-header">
+                <span style="font-size: 13px; font-weight: 600; color: #6b7280;">Question {{ forloop.counter }} of {{ result.total_questions }}</span>
+                <span class="badge {{ q.status }}">{{ q.status }}</span>
+            </div>
+
+            <div class="question-title">{{ q.question_text }}</div>
+
+            {% for key, text in q.options.items %}
+            <div class="option-review {% if key == q.correct_option %}is-correct{% elif key == q.selected_option and key != q.correct_option %}user-selected-wrong{% endif %}">
+                <strong>{{ key }}.</strong> {{ text }}
+                {% if key == q.correct_option %}
+                    <span style="float: right; color: #166534; font-weight: 600;">✓ Correct</span>
+                {% elif key == q.selected_option %}
+                    <span style="float: right; color: #991b1b; font-weight: 600;">✗ Your Choice</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div style="margin-top: 10px; font-size: 13px; color: #4b5563;">
+                {% if q.selected_option %}
+                    Your answer: <strong>{{ q.selected_option }}</strong>
+                {% else %}
+                    <em>No answer submitted (Unattempted)</em>
+                {% endif %}
+            </div>
+
+            {% if q.explanation %}
+            <div class="explanation-box">
+                <strong>Explanation:</strong> {{ q.explanation }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="action-bar">
+            <a href="{% url 'quiz_setup' %}" class="btn-primary">Take Another Quiz</a>
+            <a href="{% url 'upload_pdf' %}" class="btn-secondary">Upload More Questions</a>
+        </div>
+    </div>
+</body>
+</html>
